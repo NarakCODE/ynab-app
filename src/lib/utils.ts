@@ -1,4 +1,4 @@
-import urls from '@/constants/url';
+import url from '@/constants/url';
 import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -6,13 +6,16 @@ export function cn(...inputs: ClassValue[]) {
 	return twMerge(clsx(inputs));
 }
 
-const isProduction = process.env.NODE_ENV === 'production';
-
 export const getRedirectUrl = () => {
-	let url = process?.env?.NEXT_PUBLIC_SITE_URL ?? urls.app.overview;
-	// Make sure to include `https://` when not localhost.
-	url = isProduction ? `https:${url}` : `http://app.${url}`;
-	// Make sure to including trailing `/`.
-	url = url.charAt(url.length - 1) === '/' ? url : `${url}/`;
-	return url;
+	const isProduction = process.env.NODE_ENV === 'production';
+	const protocol = isProduction ? 'https:' : 'http:';
+	const baseUrl = url.app.overview;
+	const dashboardPath = '/dashboard';
+
+	const finalUrl = protocol + baseUrl + dashboardPath;
+
+	// ADD THIS LINE to see what is being created
+	console.log('1. Generated Redirect URL:', finalUrl);
+
+	return finalUrl;
 };

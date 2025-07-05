@@ -10,38 +10,37 @@ export async function middleware(req: NextRequest) {
 	const url = req.nextUrl;
 
 	const currentHost = hostname?.replace(`.${urls.homeWithoutApp}`, '');
-
 	const supabase = createMiddlewareClient({ req, res });
 	const { data } = await supabase.auth.getSession();
 	const { session } = data;
 
+	// Only run logic if on "app" subdomain
 	if (currentHost === 'app') {
-		if (url.pathname === '/signin' || url.pathname === '/signup') {
+		const pathname = url.pathname;
+
+		const isAuthRoute = ['/signin', '/signup'].includes(pathname);
+		const isProtectedRoute = pathname.startsWith('/dashboard');
+
+		if (isAuthRoute) {
 			if (session) {
-				url.pathname = '/';
+				// Authenticated user trying to access auth page — redirect to home
+				url.pathname = '/dashboard';
 				return NextResponse.redirect(url);
 			}
+			// Allow access to sign-in/up
 			return res;
 		}
 
-		url.pathname = `/dashboard${url.pathname}`;
-		return NextResponse.rewrite(url);
+		if (isProtectedRoute && !session) {
+			// Unauthenticated user accessing protected route — redirect to sign-in
+			url.pathname = '/signin';
+			return NextResponse.redirect(url);
+		}
 	}
 
 	return res;
 }
 
 export const config = {
-	matcher: [
-		/*
-		 * Match all paths except for:
-		 * 1. /api/ routes
-		 * 2. /_next/ (Next.js internals)
-		 * 3. /_proxy/ (special page for OG tags proxying)
-		 * 4. /_static (inside /public)
-		 * 5. /_vercel (Vercel internals)
-		 * 6. /favicon.ico, /sitemap.xml (static files)
-		 */
-		'/((?!api/|_next/|_proxy/|_static|_vercel|favicon.ico|sitemap.xml).*)',
-	],
+	matcher: ['/((?!api/|_next/|_proxy/|_static|_vercel|favicon.ico|sitemap.xml).*)'],
 };

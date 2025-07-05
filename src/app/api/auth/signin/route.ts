@@ -23,6 +23,9 @@ type UserData = {
 
 export async function POST(request: NextRequest) {
 	const { email } = await request.json();
+	const redirectToUrl = getRedirectUrl();
+	console.log('2. URL passed to Supabase:', redirectToUrl);
+
 	const user = (await prisma.users.findFirst({
 		where: { email },
 		select: { email: true, id: true, new_signup_email: true },

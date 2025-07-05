@@ -29,7 +29,7 @@ export const metadata: Metadata = {
 	},
 	description:
 		'YNAB is a personal budgeting app that helps you take control of your money and achieve your financial goals.',
-	metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL as string),
+	metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL as string),
 };
 
 export const revalidate = 0; //	In seconds
@@ -47,7 +47,7 @@ export default function RootLayout({
 		<html lang="en">
 			<body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
 				<Providers>
-					<>{children}</>
+					<AuthProvider>{children}</AuthProvider>
 					<Toaster />
 				</Providers>
 			</body>

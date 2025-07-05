@@ -55,9 +55,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 	useEffect(() => {
 		// Immediately check for an active session when the provider mounts
 		const getInitialSession = async () => {
-			const { data } = await supabase.auth.getSession();
-			setSession(data.session);
-			setIsLoading(false);
+			try {
+				const { data, error } = await supabase.auth.getSession();
+
+				if (error) {
+					console.error('Error getting session:', error);
+				} else {
+					console.log('Initial session check:', data.session ? 'Session found' : 'No session');
+					setSession(data.session);
+				}
+			} catch (error) {
+				console.error('Error in getInitialSession:', error);
+			} finally {
+				setIsLoading(false);
+			}
 		};
 
 		getInitialSession();
@@ -65,11 +76,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 		// Set up a listener for authentication state changes
 		const {
 			data: { subscription },
-		} = supabase.auth.onAuthStateChange((_event, currentSession) => {
+		} = supabase.auth.onAuthStateChange(async (event, currentSession) => {
+			console.log('Auth state changed:', event, currentSession ? 'Session exists' : 'No session');
+
 			setSession(currentSession);
-			// Optional: you can refresh the page on sign-in to reload server components
-			if (_event === 'SIGNED_IN') {
+			setIsLoading(false);
+
+			// Handle different auth events
+			if (event === 'SIGNED_IN') {
+				console.log('User signed in successfully');
+				// Optional: you can refresh the page on sign-in to reload server components
 				router.refresh();
+			} else if (event === 'SIGNED_OUT') {
+				console.log('User signed out');
+				router.push('/signin');
 			}
 		});
 
@@ -80,9 +100,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 	}, [supabase, router]);
 
 	const signOut = async () => {
-		await supabase.auth.signOut();
-		// Redirect to sign-in page after signing out
-		router.push('/signin');
+		try {
+			await supabase.auth.signOut();
+			// Redirect to sign-in page after signing out
+			router.push('/signin');
+		} catch (error) {
+			console.error('Error signing out:', error);
+		}
 	};
 
 	// Memoize the context value to prevent unnecessary re-renders

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import messages, { emails } from '@/constants/messages';
-import SignInEmail from '@/emails/signin';
+import { SignInEmail } from '@/emails/signin';
 import WelcomeEmail from '@/emails/welcome';
 import { Database } from '@/lib/database.types';
 import resend from '@/lib/email';
@@ -22,53 +22,91 @@ type UserData = {
 };
 
 export async function POST(request: NextRequest) {
-	const { email } = await request.json();
-	const redirectToUrl = getRedirectUrl();
-	console.log('2. URL passed to Supabase:', redirectToUrl);
+	try {
+		const { email } = await request.json();
 
-	const user = (await prisma.users.findFirst({
-		where: { email },
-		select: { email: true, id: true, new_signup_email: true },
-	})) as UserData;
-	if (user && user.id) {
+		if (!email) {
+			return NextResponse.json({ message: 'Email is required' }, { status: 400 });
+		}
+
+		const redirectToUrl = getRedirectUrl();
+		console.log('Redirect URL for magic link:', redirectToUrl);
+
+		const user = (await prisma.users.findFirst({
+			where: { email },
+			select: { email: true, id: true, new_signup_email: true },
+		})) as UserData;
+
+		if (!user || !user.id) {
+			return NextResponse.json({ message: messages.account.doesntexist }, { status: 404 });
+		}
+
+		// Generate magic link with proper options
+		const { data, error } = await supabaseAdmin.auth.admin.generateLink({
+			type: 'magiclink',
+			email,
+			options: {
+				redirectTo: redirectToUrl,
+				// Add additional options for better reliability
+				data: {
+					user_id: user.id,
+					timestamp: new Date().toISOString(),
+				},
+			},
+		});
+
+		if (error) {
+			console.error('Supabase magic link error:', error);
+			throw new Error(`Failed to generate magic link: ${error.message}`);
+		}
+
+		const { properties } = data;
+		const { action_link } = properties;
+
+		if (!action_link) {
+			throw new Error('No action link generated');
+		}
+
 		try {
-			const { data, error } = await supabaseAdmin.auth.admin.generateLink({
-				type: 'magiclink',
-				email,
-				options: { redirectTo: getRedirectUrl() },
-			});
-
-			if (error) {
-				throw error;
-			}
-
-			const { properties } = data;
-			const { action_link } = properties;
-
-			try {
-				if (!user.new_signup_email) {
-					await resend.emails.send({
-						from: emails.from,
-						subject: emails.welcome.subject,
-						to: user.email,
-						react: WelcomeEmail(),
-					});
-					await prisma.users.update({ where: { id: user.id }, data: { new_signup_email: true } });
-				}
+			// Send welcome email for new users
+			if (!user.new_signup_email) {
 				await resend.emails.send({
 					from: emails.from,
-					subject: emails.signin.subject,
-					to: email,
-					react: SignInEmail({ action_link }),
+					subject: emails.welcome.subject,
+					to: user.email,
+					react: WelcomeEmail(),
 				});
-				return NextResponse.json({ message: emails.sent });
-			} catch (err: any) {
-				throw err;
+
+				await prisma.users.update({
+					where: { id: user.id },
+					data: { new_signup_email: true },
+				});
 			}
-		} catch (error: any) {
-			return NextResponse.json({ message: String(error) || messages.error }, { status: 500 });
+
+			// Send signin email
+			await resend.emails.send({
+				from: emails.from,
+				subject: emails.signin.subject,
+				to: email,
+				react: SignInEmail({ action_link }),
+			});
+
+			return NextResponse.json({
+				message: emails.sent,
+				success: true,
+			});
+		} catch (emailError: any) {
+			console.error('Email sending error:', emailError);
+			throw new Error(`Failed to send email: ${emailError.message}`);
 		}
-	} else {
-		return NextResponse.json({ message: messages.account.doesntexist }, { status: 404 });
+	} catch (error: any) {
+		console.error('Signin API error:', error);
+		return NextResponse.json(
+			{
+				message: error.message || messages.error,
+				success: false,
+			},
+			{ status: 500 }
+		);
 	}
 }

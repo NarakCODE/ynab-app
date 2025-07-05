@@ -21,6 +21,9 @@ import Footnote from './footnote';
 const baseUrl = 'https://expense.fyi';
 
 export const SignInEmail = ({ action_link = '' }: { action_link?: string }) => {
+	// Clean up the action link for display
+	const displayLink = action_link.replace(/^https?:\/\//, '');
+
 	return (
 		<Html>
 			<Tailwind>
@@ -36,23 +39,27 @@ export const SignInEmail = ({ action_link = '' }: { action_link?: string }) => {
 						</Heading>
 						<Text className="text-black text-[14px] leading-[24px]">Hello,</Text>
 						<Text className="text-black text-[14px] leading-[24px]">
-							Please click the below link to Sign in to your account. This link will expire in 10 minutes.
+							Please click the link below to sign in to your account. This link will expire in 10 minutes.
 						</Text>
-						<Link
-							className="bg-[#000000] p-2 px-3 mt-1 w-[60px] block rounded-md text-white text-[13px] font-normal no-underline text-center"
-							href={action_link}
-						>
-							Sign in
-						</Link>
+						<Section className="text-center my-[24px]">
+							<Link
+								className="bg-[#000000] p-3 px-6 rounded-md text-white text-[14px] font-medium no-underline inline-block"
+								href={action_link}
+							>
+								Sign in to Dashboard
+							</Link>
+						</Section>
 						<Text className="text-black text-[14px] mt-[16px] mb-[10px] leading-[24px]">
-							or if you are on mobile, copy and paste this URL into your browser:{' '}
-							<Row>
-								<Link className="text-[#cc35e5] break-all text-sm flex w-[465px] leading-[24px]">
-									{action_link.replace(/^https?:\/\//, '')}
-								</Link>
-							</Row>
+							Or copy and paste this URL into your browser:
 						</Text>
-						<Text className="text-gray-500">If you didn{"'"}t try to Sign in, you can safely ignore this email.</Text>
+						<Section className="bg-gray-50 p-3 rounded border my-[16px]">
+							<Text className="text-[12px] font-mono text-gray-700 break-all leading-[18px] margin-0">
+								{displayLink}
+							</Text>
+						</Section>
+						<Text className="text-gray-500 text-[12px] leading-[20px]">
+							If you didn't request this sign-in link, you can safely ignore this email.
+						</Text>
 						<Footnote hideNote={true} />
 						<Footer />
 					</Container>
@@ -61,5 +68,3 @@ export const SignInEmail = ({ action_link = '' }: { action_link?: string }) => {
 		</Html>
 	);
 };
-
-export default SignInEmail;

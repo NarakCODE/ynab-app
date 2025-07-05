@@ -7,12 +7,20 @@ import { useAuth, useUser } from '@/components/providers/AuthProvider';
 import { Button } from '@/components/ui/button';
 
 function DashboardPage() {
-	const { signOut } = useAuth();
+	const { signOut, session } = useAuth();
 	const userProfile = useUser();
+
+	console.log('Dashboard rendered with session:', session ? 'exists' : 'null');
+	console.log('User profile:', userProfile);
 
 	return (
 		<div className="p-8">
 			<h1 className="text-2xl font-bold">Welcome to your Dashboard</h1>
+			{session && (
+				<p className="mt-2 text-sm text-gray-600">
+					Signed in as: <strong>{session.user.email}</strong>
+				</p>
+			)}
 			{userProfile ? (
 				<p className="mt-2">
 					Your currency is set to: <strong>{userProfile.currency}</strong>
@@ -20,7 +28,9 @@ function DashboardPage() {
 			) : (
 				<p className="mt-2">Loading profile...</p>
 			)}
-			<Button onClick={signOut}>Sign Out</Button>
+			<Button onClick={signOut} className="mt-4">
+				Sign Out
+			</Button>
 		</div>
 	);
 }

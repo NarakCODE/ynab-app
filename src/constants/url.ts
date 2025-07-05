@@ -3,22 +3,20 @@ import { views } from './table';
 
 const isProduction = process.env.NODE_ENV === 'production';
 
-const domain = 'expense.fyi';
+const domain = 'ynab';
 const local = 'localhost:3000';
 const home = isProduction ? domain : local;
 
 const url = {
 	homeWithoutApp: home,
 	home: `//${home}`,
-	api: `${isProduction ? 'https://app.' : 'http://app.'}${home}`,
-	serverApi: `${isProduction ? 'https://' : 'http://'}${home}`,
+	api: `http://${home}`,
+	serverApi: `http://${home}`,
 	app: {
-		signin: `//app.${home}/signin`,
-		signup: `//app.${home}/signup`,
-		overview: `//app.${home}`,
+		signin: `//${home}/signin`,
+		signup: `//${home}/signup`,
+		dashboard: `//${home}/dashboard`,
 	},
-	twitter: 'https://twitter.com/gokul_i',
-	github: 'https://github.com/gokulkrishh/expense.fyi',
 };
 
 export const getApiUrl = (filterKey: string, apiPath: string, categories: string[] = [], isNotRange = false) => {

@@ -8,17 +8,12 @@ export function cn(...inputs: ClassValue[]) {
 
 export const getRedirectUrl = () => {
 	const isProduction = process.env.NODE_ENV === 'production';
+	// For production, use the app subdomain. For local, use localhost.
+	const host = 'localhost:3000';
+	// Use the auth callback route instead of directly to dashboard
+	const finalUrl = `http://${host}/auth/callback`;
 
-	const baseUrl =
-		process.env.NEXT_PUBLIC_SITE_URL || (isProduction ? 'https://expense.fyi' : 'http://app.localhost:3000');
+	console.log('Generated Redirect URL for Supabase:', finalUrl);
 
-	// Ensure baseUrl doesn't end with a slash
-	const cleanBaseUrl = baseUrl.replace(/\/$/, '');
-
-	// Construct the callback URL for auth
-	const callbackUrl = `${cleanBaseUrl}/auth/callback`;
-
-	console.log('Generated Redirect URL:', callbackUrl);
-
-	return callbackUrl;
+	return finalUrl;
 };

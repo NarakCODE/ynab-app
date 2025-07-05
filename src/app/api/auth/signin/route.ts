@@ -32,10 +32,21 @@ export async function POST(request: NextRequest) {
 		const redirectToUrl = getRedirectUrl();
 		console.log('Redirect URL for magic link:', redirectToUrl);
 
-		const user = (await prisma.users.findFirst({
-			where: { email },
-			select: { email: true, id: true, new_signup_email: true },
-		})) as UserData;
+	// Use raw SQL to avoid prepared statement conflicts
+	let user: UserData | null = null;
+	try {
+		const result = await prisma.$queryRaw`
+			SELECT email, id, new_signup_email 
+			FROM users 
+			WHERE email = ${email} 
+			LIMIT 1
+		`;
+		
+		user = Array.isArray(result) && result.length > 0 ? result[0] as UserData : null;
+	} catch (dbError: any) {
+		console.error('Database error:', dbError.message);
+		throw new Error(`Database connection failed: ${dbError.message}`);
+	}
 
 		if (!user || !user.id) {
 			return NextResponse.json({ message: messages.account.doesntexist }, { status: 404 });

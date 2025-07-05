@@ -3,34 +3,31 @@ import type { NextRequest } from 'next/server';
 
 import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs';
 
+import url from './constants/url';
+
+console.log(url.homeWithoutApp);
+
 export async function middleware(req: NextRequest) {
 	const res = NextResponse.next();
-	const pathname = req.nextUrl.pathname;
+	const hostname = req.headers.get('host');
+	const url = req.nextUrl;
 
-	// Skip middleware for auth callback and public routes
-	if (
-		pathname.startsWith('/auth/callback') ||
-		pathname.startsWith('/signin') ||
-		pathname.startsWith('/api/auth') ||
-		pathname.startsWith('/_next') ||
-		pathname.startsWith('/static')
-	) {
-		return res;
-	}
+	const currentHost = hostname?.replace(`localhost:3000`, '');
 
 	const supabase = createMiddlewareClient({ req, res });
-	const {
-		data: { session },
-	} = await supabase.auth.getSession();
+	const { data } = await supabase.auth.getSession();
+	const { session } = data;
 
-	// Redirect to signin if not authenticated and trying to access protected routes
-	if (!session && pathname.startsWith('/dashboard')) {
-		return NextResponse.redirect(new URL('/signin', req.url));
+	console.log(data);
+
+	if (url.pathname.startsWith('/dashboard') && !session) {
+		url.pathname = '/signin';
+		return NextResponse.redirect(url);
 	}
 
 	return res;
 }
 
 export const config = {
-	matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
+	matcher: ['/((?!api/|_next/|_proxy/|_static|_vercel|favicon.ico|sitemap.xml).*)'],
 };

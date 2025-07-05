@@ -34,10 +34,6 @@ export const metadata: Metadata = {
 
 export const revalidate = 0; //	In seconds
 
-async function getUser(cookies: string) {
-	const res = await fetch;
-}
-
 export default function RootLayout({
 	children,
 }: Readonly<{
